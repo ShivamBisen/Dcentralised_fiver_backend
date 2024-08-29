@@ -8,6 +8,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
 import { authMiddleware } from "../middleware";
 import { createTaskInput } from "./types";
+import { number } from "zod";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -20,21 +21,66 @@ const s3Client = new S3Client({
     region: "us-east-1"
 })
 
-router.get("/task",authMiddleware, async (req, res) => {
+
+router.get("/task", authMiddleware, async (req, res) => {
     // @ts-ignore
-    const userid = req.userid
+    const taskid: string = req.query.taskid;
+    // @ts-ignore
+    const userid: string = req.userid;
 
-    const getTask = await prisma.task.findMany({
-        where:{
-            user_id: userid
+    const taskDetails = await prisma.task.findFirst({
+        where: {
+            user_id: Number(userid),
+            id: Number(taskid)
+        },
+        include: {
+            options: true
         }
-    }) 
-    if(!getTask){
-        return res.status(404).json({error: "No task found"})
+    })
 
+    if (!taskDetails) {
+        return res.status(411).json({
+            message: "You dont have access to this task"
+        })
     }
-    res.json(getTask)
-});
+
+    // Todo: Can u make this faster?
+    const responses = await prisma.submission.findMany({
+        where: {
+            task_id: Number(taskid)
+        },
+        include: {
+            option: true
+        }
+    });
+
+    const result: Record<string, {
+        count: number;
+        option: {
+            imageUrl: string
+        }
+    }> = {};
+
+    taskDetails.options.forEach(option => {
+        result[option.id] = {
+            count: 0,
+            option: {
+                imageUrl: option.image
+            }
+        }
+    })
+
+    responses.forEach(r => {
+        result[r.option_id].count++;
+    });
+
+    res.json({
+        result,
+        taskDetails
+    })
+
+})
+
 
 router.post("/task", authMiddleware, async (req, res) => {
     try {
