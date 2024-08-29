@@ -4,6 +4,8 @@ import userMainRoutes from './router/userMain';
 const app = express();
 export const SECRET = "secret";
 
+app.use(express.json());
+
 app.use('/v1/user',userRoutes);
 app.use('/v1/userMain',userMainRoutes);
 
