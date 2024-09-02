@@ -17,7 +17,7 @@ model UserMain {
   id    Int     @id @default(autoincrement())
   address String @unique
   tasks Task[]
-
+  payouts Payouts[]
 }
 
 
@@ -25,7 +25,8 @@ model Task {
   id        Int    @id @default(autoincrement())
   title     String
   signature String
-  amount    String
+  amount    Int
+  done      Boolean @default(false)
   user_id   Int
   user      UserMain    @relation(fields: [user_id], references: [id])
   options   Options[]
@@ -44,8 +45,8 @@ model User {
   id    Int     @id @default(autoincrement())
   address String @unique
   submissions Submission[]
-  pendingAmount String?
-  lockedAmount String?  
+  pendingAmount Int?
+  lockedAmount Int?  
             
 }
 
@@ -57,6 +58,22 @@ model Submission {
   option   Options @relation(fields: [option_id], references: [id])
   task_id  Int
   task   Task @relation(fields: [task_id], references: [id])
+   amount     Int
+  @@unique([user_id, task_id])
+}
 
+model Payouts {
+  id            Int     @id @default(autoincrement())
+  user_id       Int
+  user          UserMain    @relation(fields: [user_id], references: [id])
+  amount        Int
+  signature     String
+  status        TxnStatus
+}
+
+enum TxnStatus {
+  Processing
+  Success
+  Failure
 }
 

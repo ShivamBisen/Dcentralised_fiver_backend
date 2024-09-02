@@ -9,6 +9,8 @@ import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
 import { authMiddleware } from "../middleware";
 import { createTaskInput } from "./types";
 import { number } from "zod";
+import { PublicKey } from "@solana/web3.js";
+import nacl from "tweetnacl";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -115,7 +117,7 @@ router.post("/task", authMiddleware, async (req, res) => {
             const task = await tx.task.create({
                 data: {
                     title: parseData.data.title ?? "Untitled",
-                    amount: '1',
+                    amount: 1,
                     signature: parseData.data.signature,
                     user: {
                         connect: { id: userid }
@@ -171,11 +173,25 @@ router.get("/presignedUrl", authMiddleware, async (req, res) => {
 
 
 router.post('/signin', async (req, res) => {
-    const wall_address = "8DxCZfvvcRkoMevSTFix1CZ4hATSmnVh2AVPD8o5HSd9";
+    // const { publicKey, signature } = req.body;
+    // const message = new TextEncoder().encode("Sign into mechanical turks as a worker");
 
+    // const result = nacl.sign.detached.verify(
+    //     message,
+    //     new Uint8Array(signature.data),
+    //     new PublicKey(publicKey).toBytes(),
+    // );
+
+    // if (!result) {
+    //     return res.status(411).json({
+    //         message: "Incorrect signature"
+    //     })
+    // }
+
+    const publicKey = "lfjkhdfskghdjhf"
     const existingUser = await prisma.userMain.findFirst({
         where: {
-            address: wall_address
+            address: publicKey
         }
     });
 
@@ -185,7 +201,7 @@ router.post('/signin', async (req, res) => {
     } else {
         const user = await prisma.userMain.create({
             data: {
-                address: wall_address
+                address: publicKey
             }
         });
 
