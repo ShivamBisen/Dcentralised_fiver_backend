@@ -188,9 +188,19 @@ router.get("/presignedUrl", authMiddleware, async (req, res) => {
 })
 
 router.post('/signin', async (req, res) => {
+
+    console.log("trying to signiun");
+    
     // @ts-ignore
     const { publicKey, signature } = req.body;
     const message = new TextEncoder().encode("Hello, World!");
+
+    if(!publicKey)
+    {
+        return res.status(411).json({
+            message: "Public key is missing"
+        });
+    }
 
     // Convert the signature object to an array of numbers
     const signatureArray = Object.values(signature).map(value => Number(value));
