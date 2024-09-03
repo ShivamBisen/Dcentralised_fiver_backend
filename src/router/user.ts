@@ -169,7 +169,7 @@ router.post("/submission", authMiddleware, async (req, res) => {
 router.get('/taskfeed',authMiddleware,async(req,res)=>{
     // @ts-ignore
     const userid = req.userid;
-    const tasks = await prisma.task.findFirst({
+    const tasks = await prisma.task.findMany({
         where:{
             done:false,
             submissions:{
@@ -211,7 +211,7 @@ router.post('/signin',async(req,res)=>{
     //         message: "Incorrect signature"
     //     })
     // }
-    const publicKey = "ljkhfgikdfgkdfhg"
+    const publicKey = "ljkhdffdfdskfdkjgfjkhhfkdljhkdkdfhg"
 
     const existingUser = await prisma.user.findFirst({
         where:{

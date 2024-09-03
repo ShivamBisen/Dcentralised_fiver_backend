@@ -9,7 +9,7 @@ import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
 import { authMiddleware } from "../middleware";
 import { createTaskInput } from "./types";
 import { number } from "zod";
-import { PublicKey } from "@solana/web3.js";
+import { PUBLIC_KEY_LENGTH, PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
 
 const router = Router();
@@ -21,6 +21,23 @@ const s3Client = new S3Client({
         secretAccessKey: process.env.ACCESS_SECRET ?? "",
     },
     region: "us-east-1"
+})
+
+router.get("/alltasks",authMiddleware, async (req,res)=>{
+    // @ts-ignore
+    const userid = req.userid
+
+    const tasks = await prisma.task.findMany({
+        where:{
+            user_id:Number(userid)
+        },
+        include:{
+            options:true
+        }
+    })
+    
+    res.json(tasks)
+
 })
 
 
@@ -170,44 +187,59 @@ router.get("/presignedUrl", authMiddleware, async (req, res) => {
     
 })
 
-
-
 router.post('/signin', async (req, res) => {
-    // const { publicKey, signature } = req.body;
-    // const message = new TextEncoder().encode("Sign into mechanical turks as a worker");
+    // @ts-ignore
+    const { publicKey, signature } = req.body;
+    const message = new TextEncoder().encode("Hello, World!");
 
-    // const result = nacl.sign.detached.verify(
-    //     message,
-    //     new Uint8Array(signature.data),
-    //     new PublicKey(publicKey).toBytes(),
-    // );
+    // Convert the signature object to an array of numbers
+    const signatureArray = Object.values(signature).map(value => Number(value));
+    const signatureUint8Array = new Uint8Array(signatureArray);
 
-    // if (!result) {
-    //     return res.status(411).json({
-    //         message: "Incorrect signature"
-    //     })
-    // }
+    try {
+        const result = nacl.sign.detached.verify(
+            message,
+            signatureUint8Array,
+            new PublicKey(publicKey).toBytes(),
+        );
 
-    const publicKey = "lfjkhdfskghdjhf"
-    const existingUser = await prisma.userMain.findFirst({
-        where: {
-            address: publicKey
+        console.log("publicKey", publicKey);
+        console.log("signature", signature);
+
+        if (!result) {
+            return res.status(411).json({
+                message: "Incorrect signature"
+            });
         }
-    });
 
-    if (existingUser) {
-        const token = jwt.sign({ userid: existingUser.id }, SECRET);
-        res.json({ token });
-    } else {
-        const user = await prisma.userMain.create({
-            data: {
+        const existingUser = await prisma.userMain.findFirst({
+            where: {
                 address: publicKey
             }
         });
 
-        const token = jwt.sign({ userid: user.id }, SECRET);
-        res.json({ token });
+        if (existingUser) {
+            const token = jwt.sign({ userid: existingUser.id }, SECRET);
+            res.json({ token });
+        } else {
+            const user = await prisma.userMain.create({
+                data: {
+                    address: publicKey
+                }
+            });
+
+            const token = jwt.sign({ userid: user.id }, SECRET);
+            res.json({ token });
+        }
+    } catch (error) {
+        console.error('Error during signin:', error);
+        res.status(500).json({
+            message: 'Internal server error'
+        });
     }
 });
+
+
+
 
 export default router;
