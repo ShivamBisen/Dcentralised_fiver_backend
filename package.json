@@ -4,9 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx ts-node ./src/index.ts",
-    "postinstall": "npm run build",
-    "build": "tsc"
+    "dev": "npx ts-node ./src/index.ts"
   },
   "keywords": [],
   "author": "",
